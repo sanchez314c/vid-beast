@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTargets>x64;arm64</PlatformTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <PlatformTargets>x64;arm64</PlatformTargets>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Update="**\*.xaml.cs">
+      <DependentUpon>%(Filename)</DependentUpon>
+    </Compile>
+    <AvaloniaResource Include="**\*.xaml">
+      <SubType>Designer</SubType>
+    </AvaloniaResource>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Remove="Properties\**" />
+    <AvaloniaXaml Remove="Properties\**" />
+    <Compile Remove="Properties\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <None Remove="Properties\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ActiproSoftware.Controls.Avalonia" Version="25.1.0" />
+    <PackageReference Include="ActiproSoftware.Controls.Avalonia.Themes.DataGrid" Version="25.1.0" />
+    <PackageReference Include="Avalonia" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.2.0.1" />
+    <PackageReference Include="DynamicExpresso.Core" Version="2.17.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VDF.Core\VDF.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Views\DatabaseViewer.xaml.cs">
+      <DependentUpon>DatabaseViewer.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\CustomSelectionView.xaml.cs">
+      <DependentUpon>CustomSelectionView.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\ThumbnailComparer.xaml.cs">
+      <DependentUpon>ThumbnailComparer.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>
