@@ -58,6 +58,7 @@ __pycache__/
 # Archive
 archive/
 
-# Build resources (temporary files, screenshots, etc.)
-build_resources/screenshots/
+# Build resources (temporary files, but allow interface screenshots)
+build_resources/screenshots/Screenshot*
+build_resources/screenshots/*temp*
 *.png
