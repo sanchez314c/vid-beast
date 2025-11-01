@@ -139,5 +139,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**VidBeast v3.5** - Professional video corruption analysis and repair engine  
-Built with ❤️ using Electron and FFmpeg
+**VidBeast v3.5** - Professional video corruption analysis and repair engine
+Built with AI!
