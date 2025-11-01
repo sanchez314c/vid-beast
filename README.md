@@ -1,5 +1,9 @@
 # VidBeast v3.5
 
+## 📸 Application Interface
+
+![VidBeast Screenshot](build_resources/screenshots/VidBeast-Interface.jpg)
+
 ## Overview
 VidBeast is an advanced video corruption analysis and repair engine with FFmpeg integration. Built as a cross-platform Electron desktop application, VidBeast provides professional-grade tools for video processing, corruption detection, and automated repair workflows.
 
