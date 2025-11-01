@@ -1,0 +1,30 @@
+{
+  "appId": "com.vidbeast.app",
+  "productName": "VidBeast",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "dist/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "mac": {
+    "category": "public.app-category.video",
+    "icon": "resources/icon.icns",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ]
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "resources/icon.ico"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "resources/icon.png"
+  }
+}

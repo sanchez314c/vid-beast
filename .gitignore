@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.env
+*.pyc
+__pycache__/
+
+# Build outputs
+dist/
+build/
+out/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.coverage
+.pytest_cache/
+
+# OS
+Thumbs.db
+
+# Local backup archives (MANDATORY - from Phase 0)
+backup/
+*.zip
+*.tar.gz
+
+# Build temps and artifacts
+build-temp/
+temp/
+tmp/
+.cache/
+
+# Electron specific
+.electron/
+.electron-gyp/
+release-builds/
+app-builds/
+
+# Environment
+.env.local
+.env.production
+
+# Python virtual environments
+venv/
+ENV/
+env/
+__pycache__/
+
+# Archive
+archive/
+
+# Build resources (temporary files, screenshots, etc.)
+build_resources/screenshots/
+*.png

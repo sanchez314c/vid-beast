@@ -1,0 +1,61 @@
+# VidBeast Requirements
+
+## System Requirements
+
+### Development Environment
+- Node.js 18+ (LTS recommended)
+- npm 9+ 
+- Git
+
+### Supported Platforms
+- macOS 10.15+
+- Windows 10+
+- Linux (Ubuntu 20.04+, similar distributions)
+
+## Dependencies
+
+### Runtime Dependencies
+- Electron 28+
+- Chart.js 4.4+
+- chartjs-adapter-date-fns 3.0+
+- date-fns 2.30+
+
+### Development Dependencies  
+- electron-builder 24+
+
+## Build Requirements
+
+### For macOS builds:
+- Xcode Command Line Tools
+- macOS 10.15+ (for building)
+
+### For Windows builds:
+- Windows 10+ or Windows Server 2016+
+- Visual Studio Build Tools or Visual Studio Community
+
+### For Linux builds:
+- Build essentials package
+- fpm (for some package formats)
+
+## Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode
+./build-release-run.sh --dev
+
+# Build for current platform
+./build-release-run.sh
+
+# Build for all platforms
+./build-release-run.sh --platform all
+```
+
+## Icon Requirements
+
+Icons should be placed in `assets/` folder:
+- `icon.icns` - macOS (512x512)
+- `icon.ico` - Windows (256x256) 
+- `icon.png` - Linux (512x512)

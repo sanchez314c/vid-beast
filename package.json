@@ -1,0 +1,327 @@
+{
+  "name": "vidbeast-gui",
+  "version": "3.5.0",
+  "description": "VidBeast - Advanced Video Corruption Analysis & Repair Engine with FFmpeg Integration",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "test": "echo \"No tests specified\"",
+    "clean": "rm -rf dist temp logs/*.log",
+    "prebuild": "npm run clean",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:mac:universal": "electron-builder --mac --universal",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --mac --win --linux",
+    "dist": "npm run build",
+    "dist:mac": "npm run build:mac",
+    "dist:win": "npm run build:win",
+    "dist:linux": "npm run build:linux",
+    "dist:all": "npm run build:all",
+    "postinstall": "electron-builder install-app-deps",
+    "release": "npm run build:all"
+  },
+  "author": "Claude & Heathen-Admin",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron/get": "^4.0.2",
+    "electron": "^38.1.0",
+    "electron-builder": "^25.1.8"
+  },
+  "homepage": "https://github.com/vidbeast/vidbeast",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vidbeast/vidbeast.git"
+  },
+  "keywords": [
+    "video",
+    "corruption",
+    "repair",
+    "ffmpeg",
+    "analysis",
+    "electron"
+  ],
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "build": {
+    "appId": "com.vidbeast.app",
+    "productName": "VidBeast",
+    "copyright": "Copyright © 2025 VidBeast Team",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "resources/**/*",
+      "package.json",
+      "!**/*.ts",
+      "!**/*.map",
+      "!**/*.md",
+      "!**/test/**",
+      "!**/tests/**",
+      "!**/__tests__/**",
+      "!**/node_modules/.cache/**"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/binaries",
+        "to": "resources/binaries"
+      }
+    ],
+    "compression": "maximum",
+    "electronDownload": {
+      "cache": "/Users/heathen-admin/.cache/electron"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build_resources/icons/icon.icns",
+      "identity": null,
+      "sign": false,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "x64ArchFiles": "Contents/Resources/resources/binaries/darwin-x64/**/*",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64",
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64",
+            "universal"
+          ]
+        },
+        {
+          "target": "pkg",
+          "arch": [
+            "x64",
+            "arm64",
+            "universal"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "x64",
+            "arm64",
+            "universal"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 150,
+          "type": "file"
+        }
+      ]
+    },
+    "win": {
+      "icon": "build_resources/icons/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        },
+        {
+          "target": "msi",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        },
+        {
+          "target": "appx",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VidBeast"
+    },
+    "msi": {
+      "oneClick": false,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "upgradeCode": "A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6"
+    },
+    "portable": {
+      "requestExecutionLevel": "user"
+    },
+    "appx": {
+      "applicationId": "VidBeast",
+      "backgroundColor": "#464646",
+      "displayName": "VidBeast",
+      "identityName": "VidBeast.VidBeast",
+      "publisherDisplayName": "VidBeast Team"
+    },
+    "linux": {
+      "category": "AudioVideo",
+      "icon": "build_resources/icons/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64",
+            "armv7l"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64",
+            "armv7l"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64",
+            "arm64",
+            "armv7l"
+          ]
+        },
+        {
+          "target": "snap",
+          "arch": [
+            "x64",
+            "arm64",
+            "armv7l"
+          ]
+        },
+        {
+          "target": "tar.xz",
+          "arch": [
+            "x64",
+            "arm64",
+            "armv7l"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64",
+            "arm64",
+            "armv7l"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "x64",
+            "arm64",
+            "armv7l"
+          ]
+        }
+      ],
+      "desktop": {
+        "entry": {
+          "StartupNotify": "true",
+          "Encoding": "UTF-8",
+          "Icon": "vidbeast",
+          "Type": "Application",
+          "Categories": "AudioVideo;Video;"
+        }
+      }
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ]
+    },
+    "rpm": {
+      "depends": [
+        "gtk3",
+        "libnotify",
+        "nss",
+        "libXScrnSaver",
+        "libXtst",
+        "xdg-utils",
+        "at-spi2-core",
+        "libuuid",
+        "libsecret"
+      ]
+    },
+    "snap": {
+      "grade": "stable",
+      "summary": "VidBeast Video Application",
+      "confinement": "strict",
+      "base": "core20"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "your-username",
+        "repo": "vidbeast"
+      }
+    ]
+  }
+}

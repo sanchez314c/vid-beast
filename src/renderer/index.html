@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VidBeast - Video Corruption Analysis & Repair Engine</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-section">
+                <div class="logo">
+                    <span class="logo-text">VIDBEAST</span>
+                    <span class="version">v3.5.0</span>
+                </div>
+                <div class="tagline">Video Corruption Analysis & Repair Engine</div>
+            </div>
+            
+            <div class="header-controls">
+                <select class="language-select">
+                    <option value="en">English</option>
+                </select>
+                <div class="system-info" id="systemInfo">
+                    <span id="cpuInfo">12 cores</span>
+                    <span id="memInfo">128GB RAM</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Source Input -->
+        <section class="source-section">
+            <div class="source-header">
+                <span class="diamond">♦</span>
+                <span>Source files & folders</span>
+            </div>
+            <div class="source-input">
+                <input type="text" id="sourceInput" placeholder="Select video files or folders to analyze..." readonly>
+                <button id="selectVideos" class="btn btn-primary btn-large">📂 Select Videos</button>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="analysis">Corruption Analysis</button>
+            <button class="nav-tab" data-tab="repair">Repair Queue</button>
+            <button class="nav-tab" data-tab="results">Results & Reports</button>
+            <button class="nav-tab" data-tab="settings">Settings</button>
+            <button class="nav-tab" data-tab="help">Help</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Analysis Tab -->
+            <div class="tab-content active" id="analysisTab">
+                <div class="content-grid">
+                    <!-- Left Panel: Controls -->
+                    <div class="left-panel">
+                        <div class="control-section">
+                            <h3>Analysis Options</h3>
+                            <div class="control-group">
+                                <label>
+                                    <input type="checkbox" id="enableRepair"> Enable Repair Mode
+                                </label>
+                                <label>
+                                    <input type="checkbox" id="recursiveMode" checked> Recursive (scan subdirectories)
+                                </label>
+                                <label>
+                                    <input type="checkbox" id="detailedMode"> Detailed Analysis
+                                </label>
+                                <label>
+                                    <input type="checkbox" id="extractFrames"> Extract Frames to PNG
+                                </label>
+                            </div>
+                            
+                            <div class="control-group" id="frameOptions" style="display: none;">
+                                <label for="frameRate">Frame Rate (fps):</label>
+                                <select id="frameRate">
+                                    <option value="0.1">0.1 fps (Every 10 seconds)</option>
+                                    <option value="0.5">0.5 fps (Every 2 seconds)</option>
+                                    <option value="1" selected>1 fps (Every second)</option>
+                                    <option value="2">2 fps (2 per second)</option>
+                                    <option value="5">5 fps (5 per second)</option>
+                                    <option value="10">10 fps (10 per second)</option>
+                                    <option value="30">30 fps (All frames)</option>
+                                </select>
+                                
+                                <label for="frameOutput">Frame Output Folder:</label>
+                                <div class="input-group">
+                                    <input type="text" id="frameOutput" placeholder="Select folder for PNG frames...">
+                                    <button id="selectFrameOutput" class="btn btn-secondary">Browse</button>
+                                </div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="outputFolder">Output Folder:</label>
+                                <div class="input-group">
+                                    <input type="text" id="outputFolder" placeholder="Select output folder...">
+                                    <button id="selectOutput" class="btn btn-secondary">Browse</button>
+                                </div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label>
+                                    <input type="checkbox" id="enableAdvancedRepair"> Advanced Repair Options
+                                </label>
+                                <div id="advancedRepairOptions" style="display: none;">
+                                    <label>
+                                        <input type="checkbox" id="tryAllStrategies"> Try All Repair Strategies
+                                    </label>
+                                    <label>
+                                        <input type="checkbox" id="preserveQuality" checked> Preserve Original Quality
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="outputFormat">Output Format:</label>
+                                <select id="outputFormat">
+                                    <option value="mp4-h264" selected>MP4 (H.264)</option>
+                                    <option value="mp4-hevc">MP4 (HEVC/H.265)</option>
+                                    <option value="mov-prores">Apple MOV (ProRes)</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <label>
+                                    <input type="checkbox" id="extractFramesOnFailure"> Extract frames if all repairs fail
+                                </label>
+                                <div id="frameExtractionOptions" style="display: none;">
+                                    <label for="failureFrameRate">Frame extraction rate:</label>
+                                    <select id="failureFrameRate">
+                                        <option value="1">1 fps</option>
+                                        <option value="2">2 fps</option>
+                                        <option value="5">5 fps</option>
+                                        <option value="10">10 fps</option>
+                                        <option value="24" selected>24 fps</option>
+                                        <option value="30">30 fps</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <button id="startAnalysis" class="btn btn-success btn-large">
+                                    🔍 Start Analysis
+                                </button>
+                                <button id="stopAnalysis" class="btn btn-danger" disabled>
+                                    ⏹️ Stop
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="stats-section">
+                            <h3>Quick Stats</h3>
+                            <div class="stat-item">
+                                <span class="stat-label">Files Found:</span>
+                                <span class="stat-value" id="filesFound">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Corrupted:</span>
+                                <span class="stat-value" id="corruptedCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Repairable:</span>
+                                <span class="stat-value" id="repairableCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Success Rate:</span>
+                                <span class="stat-value" id="successRate">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Panel: Progress & Charts -->
+                    <div class="right-panel">
+                        <!-- Status Display -->
+                        <div class="status-section">
+                            <h2 class="status-title" id="statusTitle">Ready</h2>
+                            <div class="status-details">
+                                <div class="status-item">Total files analyzed: <span id="totalFiles">0</span></div>
+                                <div class="status-item">Current file: <span id="currentFile">None</span></div>
+                                <div class="status-item">Start time: <span id="startTime">--:--:--</span></div>
+                                <div class="status-item">Duration: <span id="duration">0:00</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Charts -->
+                        <div class="charts-section">
+                            <div class="chart-container">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Repair Queue Tab -->
+            <div class="tab-content" id="repairTab">
+                <div class="repair-header">
+                    <h2>Repair Queue</h2>
+                    <div class="repair-controls">
+                        <button id="startRepairs" class="btn btn-success">🔧 Start All Repairs</button>
+                        <button id="clearQueue" class="btn btn-warning">🗑️ Clear Queue</button>
+                    </div>
+                </div>
+                
+                <div class="queue-container">
+                    <table class="queue-table" id="repairQueue">
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Size</th>
+                                <th>Corruption Level</th>
+                                <th>Repair Strategy</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queueBody">
+                            <!-- Queue items will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="repair-info">
+                    <h3>Available Repair Strategies</h3>
+                    <ul>
+                        <li><strong>Extract Playable:</strong> Extracts the playable portion of the video</li>
+                        <li><strong>Container Repair:</strong> Fixes MP4/MOV container structure issues</li>
+                        <li><strong>Stream Remux:</strong> Rebuilds video/audio streams in new container</li>
+                        <li><strong>Deep Repair:</strong> Re-encodes video to fix bitstream corruption</li>
+                        <li><strong>Keyframe Rebuild:</strong> Reconstructs missing or damaged keyframes</li>
+                        <li><strong>Remove Audio:</strong> Removes corrupted audio track</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Results Tab -->
+            <div class="tab-content" id="resultsTab">
+                <div class="results-header">
+                    <h2>Analysis Results & Reports</h2>
+                    <div class="results-controls">
+                        <button id="exportReport" class="btn btn-primary">📊 Export HTML Report</button>
+                        <button id="exportCSV" class="btn btn-secondary">📄 Export CSV</button>
+                    </div>
+                </div>
+                
+                <div class="results-container">
+                    <div class="results-summary">
+                        <div class="summary-card">
+                            <h3>Analysis Summary</h3>
+                            <div class="summary-stats">
+                                <div class="summary-stat">
+                                    <span class="stat-number" id="totalAnalyzed">0</span>
+                                    <span class="stat-label">Files Analyzed</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="stat-number" id="totalCorrupted">0</span>
+                                    <span class="stat-label">Corrupted Files</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="stat-number" id="totalRepaired">0</span>
+                                    <span class="stat-label">Successfully Repaired</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="results-details" id="resultsDetails">
+                        <!-- Detailed results will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settingsTab">
+                <div class="settings-container">
+                    <h2>VidBeast Settings</h2>
+                    
+                    <div class="settings-group">
+                        <h3>Analysis Settings</h3>
+                        <div class="setting-item">
+                            <label for="maxThreads">Max Threads:</label>
+                            <input type="number" id="maxThreads" min="1" max="32" value="8">
+                            <span class="setting-help">Number of parallel analysis threads</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="timeoutSeconds">Analysis Timeout (seconds):</label>
+                            <input type="number" id="timeoutSeconds" min="30" max="600" value="300">
+                            <span class="setting-help">Maximum time per file analysis</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3>Repair Settings</h3>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="autoRepair"> Auto-repair when possible
+                            </label>
+                            <span class="setting-help">Automatically start repairs after analysis</span>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="preserveOriginal" checked> Always preserve original files
+                            </label>
+                            <span class="setting-help">Never overwrite source files</span>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="useGPUAcceleration"> Use GPU Acceleration (if available)
+                            </label>
+                            <span class="setting-help">Speeds up re-encoding operations</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3>FFmpeg Configuration</h3>
+                        <div class="setting-item">
+                            <span id="ffmpegStatus">Checking FFmpeg status...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Tab -->
+            <div class="tab-content" id="helpTab">
+                <div class="help-container">
+                    <h2>VidBeast - Comprehensive User Guide</h2>
+                    
+                    <div class="help-section">
+                        <h3>🚀 Quick Start Guide</h3>
+                        <ol>
+                            <li><strong>Select Your Videos:</strong>
+                                <ul>
+                                    <li>Click "📁 Browse Files" to select individual video files (hold Ctrl/Cmd for multiple)</li>
+                                    <li>Click "📂 Browse Folder" to select an entire folder of videos</li>
+                                    <li>Enable "Recursive" checkbox to scan all subfolders within your selected folder</li>
+                                    <li>The input field will show your selection (path or number of files)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Configure Analysis Options:</strong>
+                                <ul>
+                                    <li><strong>Enable Repair Mode:</strong> Automatically attempt repairs on corrupted files</li>
+                                    <li><strong>Recursive Mode:</strong> Include all videos in subfolders (recommended for large collections)</li>
+                                    <li><strong>Detailed Analysis:</strong> Perform deeper inspection (slower but more thorough)</li>
+                                    <li><strong>Extract Frames:</strong> Save video frames as PNG images during analysis</li>
+                                </ul>
+                            </li>
+                            <li><strong>Set Output Location:</strong>
+                                <ul>
+                                    <li>Click "Browse" next to Output Folder to choose where repaired files will be saved</li>
+                                    <li>VidBeast will create organized subfolders: /healthy/, /repaired/, /extracted_frames/</li>
+                                    <li>Original files are NEVER modified - all outputs go to your chosen folder</li>
+                                </ul>
+                            </li>
+                            <li><strong>Start Analysis:</strong>
+                                <ul>
+                                    <li>Click the green "🔍 Start Analysis" button</li>
+                                    <li>Watch real-time progress in the status area and charts</li>
+                                    <li>Files are automatically organized based on their health status</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>📊 Understanding the Interface</h3>
+                        <h4>Main Dashboard Elements:</h4>
+                        <ul>
+                            <li><strong>Status Display:</strong> Shows current operation and progress</li>
+                            <li><strong>Quick Stats Sidebar:</strong>
+                                <ul>
+                                    <li><strong>Files Found:</strong> Total video files discovered in your selection</li>
+                                    <li><strong>Corrupted:</strong> Files with any level of corruption detected</li>
+                                    <li><strong>Repairable:</strong> Corrupted files that can likely be fixed</li>
+                                    <li><strong>Success Rate:</strong> Percentage of healthy + repairable files</li>
+                                </ul>
+                            </li>
+                            <li><strong>Progress Chart:</strong> Visual representation of analysis results
+                                <ul>
+                                    <li>🟢 Green = Healthy files</li>
+                                    <li>🔴 Red = Corrupted files</li>
+                                    <li>🟡 Gold = Successfully repaired files</li>
+                                </ul>
+                            </li>
+                            <li><strong>Header Indicators:</strong>
+                                <ul>
+                                    <li>CPU/RAM info shows system resources</li>
+                                    <li>🎮 GPU Accel = Hardware acceleration available</li>
+                                    <li>💻 CPU Only = Software encoding only</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>🎯 Corruption Detection Explained</h3>
+                        <h4>Corruption Levels:</h4>
+                        <ul>
+                            <li><strong>🟢 None (Healthy):</strong> 
+                                <ul>
+                                    <li>File plays perfectly with no errors</li>
+                                    <li>All streams intact and properly indexed</li>
+                                    <li>Automatically copied to /healthy/ folder for organization</li>
+                                </ul>
+                            </li>
+                            <li><strong>🟡 Minor:</strong>
+                                <ul>
+                                    <li>Small metadata issues or index problems</li>
+                                    <li>File still plays but may have seeking issues</li>
+                                    <li>Usually fixed with container repair</li>
+                                </ul>
+                            </li>
+                            <li><strong>🟠 Moderate:</strong>
+                                <ul>
+                                    <li>Missing keyframes or damaged headers</li>
+                                    <li>Playback issues like freezing or artifacts</li>
+                                    <li>Often repairable with stream remux or re-encoding</li>
+                                </ul>
+                            </li>
+                            <li><strong>🔴 Severe:</strong>
+                                <ul>
+                                    <li>Significant stream damage or truncation</li>
+                                    <li>Large portions may be unplayable</li>
+                                    <li>Repair possible but may lose some content</li>
+                                </ul>
+                            </li>
+                            <li><strong>⚫ Catastrophic:</strong>
+                                <ul>
+                                    <li>File structure severely damaged</li>
+                                    <li>Cannot be opened by most players</li>
+                                    <li>Frame extraction may be the only recovery option</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>🔧 Repair Strategies In-Depth</h3>
+                        <h4>Available Repair Methods:</h4>
+                        <ul>
+                            <li><strong>🎬 Extract Playable (Fastest):</strong>
+                                <ul>
+                                    <li>Extracts video up to the first major error</li>
+                                    <li>Best for: Files corrupted at the end</li>
+                                    <li>Pros: Very fast, preserves quality</li>
+                                    <li>Cons: May lose content after corruption point</li>
+                                </ul>
+                            </li>
+                            <li><strong>📦 Container Repair (Quick):</strong>
+                                <ul>
+                                    <li>Rebuilds MP4/MOV container structure</li>
+                                    <li>Best for: Header corruption, index issues</li>
+                                    <li>Pros: Fast, fixes common metadata problems</li>
+                                    <li>Cons: Cannot fix stream-level corruption</li>
+                                </ul>
+                            </li>
+                            <li><strong>🔄 Stream Remux (Moderate):</strong>
+                                <ul>
+                                    <li>Extracts video/audio streams and repackages them</li>
+                                    <li>Best for: Container corruption with intact streams</li>
+                                    <li>Pros: Preserves original quality, fixes timing issues</li>
+                                    <li>Cons: Cannot fix corrupted stream data</li>
+                                </ul>
+                            </li>
+                            <li><strong>🔨 Deep Repair (Slowest):</strong>
+                                <ul>
+                                    <li>Complete re-encode using error-resilient settings</li>
+                                    <li>Best for: Bitstream corruption, codec errors</li>
+                                    <li>Pros: Can fix most playback issues</li>
+                                    <li>Cons: Slow, slight quality loss from re-encoding</li>
+                                </ul>
+                            </li>
+                            <li><strong>🎞️ Keyframe Rebuild:</strong>
+                                <ul>
+                                    <li>Reconstructs missing or damaged keyframes</li>
+                                    <li>Best for: GOP structure issues, missing I-frames</li>
+                                    <li>Pros: Fixes seeking and playback stuttering</li>
+                                    <li>Cons: May introduce minor artifacts</li>
+                                </ul>
+                            </li>
+                            <li><strong>🔇 Remove Audio:</strong>
+                                <ul>
+                                    <li>Extracts video only, discarding corrupted audio</li>
+                                    <li>Best for: Audio stream corruption</li>
+                                    <li>Pros: Salvages video when audio is damaged</li>
+                                    <li>Cons: Results in silent video</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>⚙️ Advanced Features</h3>
+                        <h4>Frame Extraction:</h4>
+                        <ul>
+                            <li>Extract frames during analysis to preview video content</li>
+                            <li>Choose frame rate: 0.1 fps (every 10s) to 30 fps (all frames)</li>
+                            <li>Useful for recovering still images from corrupted videos</li>
+                            <li>Enable "Extract frames if all repairs fail" as a last resort</li>
+                        </ul>
+                        
+                        <h4>Output Formats:</h4>
+                        <ul>
+                            <li><strong>MP4 (H.264):</strong> Most compatible, good quality/size balance</li>
+                            <li><strong>MP4 (HEVC/H.265):</strong> Better compression, requires newer devices</li>
+                            <li><strong>Apple MOV (ProRes):</strong> Professional quality, large files</li>
+                        </ul>
+                        
+                        <h4>Hardware Acceleration:</h4>
+                        <ul>
+                            <li>Automatically detected on launch</li>
+                            <li>VideoToolbox (macOS), NVENC (NVIDIA), QuickSync (Intel), AMF (AMD)</li>
+                            <li>Enable in Settings when available for faster processing</li>
+                            <li>Falls back to CPU if GPU encoding fails</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>📋 Workflow Tips & Best Practices</h3>
+                        <h4>For Large Video Collections:</h4>
+                        <ol>
+                            <li>Start with a test folder to verify settings</li>
+                            <li>Enable Recursive mode to process all subfolders</li>
+                            <li>Use "Auto-repair when possible" for hands-off operation</li>
+                            <li>Set max threads based on CPU cores (default: 8)</li>
+                            <li>Increase timeout for very large files (4K/8K videos)</li>
+                        </ol>
+                        
+                        <h4>For Maximum Recovery:</h4>
+                        <ol>
+                            <li>Enable "Try All Repair Strategies" in advanced options</li>
+                            <li>Set "Extract frames if all repairs fail" as backup</li>
+                            <li>Use Detailed Analysis mode for thorough inspection</li>
+                            <li>Keep "Preserve Original Quality" checked when possible</li>
+                        </ol>
+                        
+                        <h4>Performance Optimization:</h4>
+                        <ul>
+                            <li>Close other applications to free up RAM</li>
+                            <li>Use SSD for output folder (faster writes)</li>
+                            <li>Enable GPU acceleration when available</li>
+                            <li>Reduce max threads if system becomes unresponsive</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>🚨 Troubleshooting Common Issues</h3>
+                        <h4>Analysis seems stuck:</h4>
+                        <ul>
+                            <li>Check if current file is very large (>4GB)</li>
+                            <li>Increase timeout in Settings</li>
+                            <li>Try disabling Detailed Analysis mode</li>
+                        </ul>
+                        
+                        <h4>Repairs failing frequently:</h4>
+                        <ul>
+                            <li>Ensure output folder has enough free space</li>
+                            <li>Try different repair strategies</li>
+                            <li>Check file permissions on output directory</li>
+                        </ul>
+                        
+                        <h4>FFmpeg not found:</h4>
+                        <ul>
+                            <li>VidBeast will auto-download on first use</li>
+                            <li>Check Settings tab for FFmpeg status</li>
+                            <li>Restart app if download fails</li>
+                        </ul>
+                        
+                        <h4>High CPU/Memory usage:</h4>
+                        <ul>
+                            <li>Reduce Max Threads in Settings</li>
+                            <li>Process files in smaller batches</li>
+                            <li>Disable simultaneous repair operations</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>💡 Pro Tips</h3>
+                        <ul>
+                            <li><strong>Batch Processing:</strong> Select entire drives or folders for overnight processing</li>
+                            <li><strong>Quality Preservation:</strong> Use ProRes output for archival purposes</li>
+                            <li><strong>Smart Organization:</strong> Let VidBeast auto-sort files into /healthy/ and /repaired/</li>
+                            <li><strong>Incremental Backup:</strong> Process copies first, keep originals safe</li>
+                            <li><strong>Recovery Hierarchy:</strong> Try fast methods first, then slower deep repairs</li>
+                            <li><strong>Frame Recovery:</strong> Even "catastrophic" files may yield valuable still frames</li>
+                            <li><strong>Regular Scanning:</strong> Periodically check video archives for developing corruption</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>📊 Understanding Reports</h3>
+                        <p>Export analysis results for documentation:</p>
+                        <ul>
+                            <li><strong>HTML Report:</strong> Formatted report with color coding and statistics</li>
+                            <li><strong>CSV Export:</strong> Spreadsheet-compatible data for further analysis</li>
+                            <li>Reports include: file paths, corruption levels, repair status, and recommendations</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section" style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-top: 20px;">
+                        <h3>⚡ Quick Reference</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <h4>Keyboard Shortcuts:</h4>
+                                <ul style="list-style: none; padding: 0;">
+                                    <li>Coming in future update</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4>File Support:</h4>
+                                <ul style="list-style: none; padding: 0;">
+                                    <li>✅ MP4, MOV, AVI, MKV</li>
+                                    <li>✅ M4V, FLV, WEBM</li>
+                                    <li>✅ WMV, MPG, MPEG</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-left">
+                <span>VidBeast v3.5.0 - Video Corruption Analysis & Repair Engine</span>
+            </div>
+            <div class="footer-right">
+                <span id="footerStatus">Ready</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
