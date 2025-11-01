@@ -216,10 +216,7 @@ class ProcessLimiter {
 Build System/
 ├── electron-builder.json          // Build configuration
 ├── scripts/
-│   ├── build-universal.sh        // Universal build script
-│   ├── build-macos.sh           // macOS-specific build
-│   ├── build-windows.sh          // Windows-specific build
-│   └── build-linux.sh           // Linux-specific build
+│   └── build-compile-dist.sh      // Universal build script
 ├── resources/
 │   └── binaries/               // Platform-specific FFmpeg
 └── dist/                       // Build outputs

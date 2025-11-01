@@ -31,38 +31,19 @@ cd vidbeast
 # Install dependencies
 npm install
 
-# Development mode
-npm run dev
-
-# Production build
-npm run build:all
+# Build and run
+./scripts/build-compile-dist.sh
 ```
 
 ### Running the Application
 
-#### From Source (Development)
-```bash
-# macOS
-./scripts/run-macos-source.sh
+The build script creates platform-specific executables in the `dist/` directory:
 
-# Windows
-scripts\run-windows-source.bat
+- **macOS**: `VidBeast-*.dmg` or `VidBeast.app`
+- **Windows**: `VidBeast Setup *.exe`
+- **Linux**: `VidBeast-*.AppImage` or `VidBeast*.deb`
 
-# Linux
-./scripts/run-linux-source.sh
-```
-
-#### Compiled Binary (Production)
-```bash
-# macOS
-./scripts/run-macos.sh
-
-# Windows
-scripts\run-windows.bat
-
-# Linux
-./scripts/run-linux.sh
-```
+After building, install and run the application using the appropriate package for your platform.
 
 ## Project Structure
 
@@ -75,9 +56,10 @@ vidbeast/
 │   └── services/          # Business logic
 ├── assets/                # Application assets
 │   └── icons/            # Platform-specific icons
-├── resources/             # External resources
-│   └── binaries/         # FFmpeg binaries (per platform)
-├── scripts/               # Build and run scripts
+├── build_resources/       # Build resources and assets
+│   ├── binaries/         # FFmpeg binaries (per platform)
+│   └── screenshots/      # Application screenshots
+├── scripts/               # Build scripts
 ├── docs/                  # User documentation
 ├── dev/                   # Development documentation
 ├── tests/                 # Test suites
@@ -108,16 +90,19 @@ vidbeast/
 VidBeast includes a comprehensive build system supporting all major platforms and installer formats:
 
 ```bash
-# Build for all platforms
-./scripts/compile-build-dist.sh
+# Build for current platform (auto-detected)
+./scripts/build-compile-dist.sh
 
-# Platform-specific builds
-./scripts/compile-build-dist.sh --platform mac
-./scripts/compile-build-dist.sh --platform win  
-./scripts/compile-build-dist.sh --platform linux
+# Build for specific platforms
+./scripts/build-compile-dist.sh --platform mac
+./scripts/build-compile-dist.sh --platform win
+./scripts/build-compile-dist.sh --platform linux
 
 # Quick development build
-./scripts/compile-build-dist.sh --quick
+./scripts/build-compile-dist.sh --quick
+
+# Build for all platforms
+./scripts/build-compile-dist.sh --platform all
 ```
 
 ### Supported Package Formats
