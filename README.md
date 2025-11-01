@@ -53,17 +53,20 @@ vidbeast/
 │   ├── main.js            # Electron main process
 │   ├── renderer/          # Renderer process (UI)
 │   ├── components/        # UI components
-│   └── services/          # Business logic
-├── assets/                # Application assets
-│   └── icons/            # Platform-specific icons
+│   ├── services/          # Business logic
+│   ├── lib/               # Core libraries
+│   ├── utils/             # Utility functions
+│   ├── types/             # TypeScript definitions
+│   ├── constants/         # Application constants
+│   └── styles/            # CSS stylesheets
 ├── build_resources/       # Build resources and assets
 │   ├── binaries/         # FFmpeg binaries (per platform)
+│   ├── icons/            # Platform-specific application icons
 │   └── screenshots/      # Application screenshots
 ├── scripts/               # Build scripts
 ├── docs/                  # User documentation
-├── dev/                   # Development documentation
-├── tests/                 # Test suites
-└── dist/                  # Build outputs
+├── archive/               # Archived files and resources
+└── dist/                  # Build outputs (generated)
 ```
 
 ## Features
@@ -112,15 +115,13 @@ VidBeast includes a comprehensive build system supporting all major platforms an
 
 ## Documentation
 
-- [Technical Architecture](dev/tech-stack.md)
-- [Development Guide](dev/CONTRIBUTING.md)
-- [Product Requirements](dev/master-PRD.md)
-- [Project Structure](dev/PROJECT_STRUCTURE.md)
-- [Change History](dev/CHANGELOG.md)
+- [Technical Architecture](docs/ARCHITECTURE.md)
+- [Security](SECURITY.md)
+- [License](LICENSE)
 
 ## Contributing
 
-See [CONTRIBUTING.md](dev/CONTRIBUTING.md) for development guidelines and contribution process.
+Contributions are welcome! Please feel free to submit pull requests or create issues for bug reports and feature requests.
 
 ## Security
 
