@@ -27,8 +27,10 @@
   "license": "MIT",
   "devDependencies": {
     "@electron/get": "^4.0.2",
+    "@eslint/js": "^9.39.4",
     "electron": "^38.1.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.39.4"
   },
   "homepage": "https://github.com/sanchez314c/vid-beast",
   "repository": {
@@ -62,6 +64,8 @@
       "!**/*.ts",
       "!**/*.map",
       "!**/*.md",
+      "!**/*.backup.*",
+      "!src/sources/**",
       "!**/test/**",
       "!**/tests/**",
       "!**/__tests__/**",
@@ -79,7 +83,7 @@
     },
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "build_resources/icons/icon.icns",
+      "icon": "resources/icons/icon.icns",
       "identity": null,
       "sign": false,
       "hardenedRuntime": false,
@@ -136,7 +140,7 @@
       ]
     },
     "win": {
-      "icon": "build_resources/icons/icon.ico",
+      "icon": "resources/icons/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -215,7 +219,7 @@
     },
     "linux": {
       "category": "AudioVideo",
-      "icon": "build_resources/icons/icon.png",
+      "icon": "resources/icons/icon.png",
       "target": [
         {
           "target": "AppImage",

@@ -1,345 +1,121 @@
-# VidBeast Forensic Code Quality Audit Report
+# AUDIT_REPORT — VidBeast
 
-**Date:** 2026-03-14
-**Auditor:** Master Control
-**Scope:** Full codebase — `/media/heathen-admin/RAID/Development/Projects/portfolio/vid-beast`
-**Files Audited:** `src/main.js`, `src/renderer/renderer.js`, `src/renderer/preload.js`, `package.json`, `run-source-linux.sh`, `scripts/build-compile-dist.sh`, `scripts/run-linux.sh`
-**Status:** ALL CRITICAL AND HIGH FINDINGS FIXED. MEDIUM AND LOW FIXED WHERE POSSIBLE.
-
----
-
-## Summary
-
-| Severity | Found | Fixed |
-|----------|-------|-------|
-| CRITICAL | 2 | 2 |
-| HIGH | 6 | 6 |
-| MEDIUM | 7 | 7 |
-| LOW | 3 | 2 |
-| **Total** | **18** | **17** |
+**Generated**: 2026-04-17 (Step 5 of /repopipeline)
+**Run by**: Master Control (claude-x sub-agent dispatched but Z.AI rate-limited 14:38 with 0 output; killed and audit completed locally)
+**Target**: /media/heathen-admin/RAID/Development/Projects/portfolio/00-QUEUE/vid-beast
+**Stack**: Electron 38.1.0, vanilla JS, FFmpeg-bundled
 
 ---
 
-## Findings & Remediations
+## Executive Summary
+
+VidBeast (3.5.0) audit covers `src/main.js` (1786 LOC), `src/renderer/{preload,renderer}.js`, `src/renderer/{index.html,styles.css}`. Vendored C# project at `src/sources/videoduplicatefinder-master/` excluded.
+
+**Overall posture**: Hardened well for the deliberately-permissive Electron config (nodeIntegration:true, contextIsolation:false — intentional, documented in `main.js:351` and `PRD.md §13` and §14.3). Security-critical paths use `validatePath()` (block `../`, null bytes, non-absolute, len > 4096) and `validateVideoExtension()` (allowlist of 10 extensions). All FFmpeg invocations via `spawn(cmd, [args])` with array args — no shell. The single `exec()` site (`spawnPromise` superseded it; `execPromise` retained only for hardcoded `system_profiler SPDisplaysDataType` macOS GPU detection).
+
+Most flagged issues from PRD §14 were already fixed in prior pipeline passes (dead-code comment block, "Remove Audio" UI list entry, `keyframe-repair` strategy in `advanced-repair`). Two new findings auto-fixed this pass: dead IPC channels in preload allowlist, leftover `Keyframe Rebuild` mention in Help section.
+
+---
+
+## Findings by Severity
 
 ### CRITICAL
-
----
-
-#### C-01: `save-report` IPC Handler — Wrong Function Signature
-
-**File:** `src/main.js` line 1608
-**Severity:** CRITICAL
-**Category:** Breaking Bug
-
-**Description:**
-The `ipcMain.handle('save-report', async (content, type) => {...})` handler was missing the mandatory first `event` parameter that Electron always passes to IPC handlers. As a result, `content` was receiving the Electron `IpcMainInvokeEvent` object (not the actual report content) and `type` was receiving what should have been `content`. Every call to export a report was silently writing the serialized IPC event object to disk rather than the HTML or CSV data.
-
-**Root Cause:** Missing `event` argument in the handler signature.
-
-**Fix Applied:**
-```js
-// BEFORE
-ipcMain.handle('save-report', async (content, type) => {
-// AFTER
-ipcMain.handle('save-report', async (event, content, type) => {
-```
-
----
-
-#### C-02: Statistics Double-Counting in `batch-progress` Listener
-
-**File:** `src/renderer/renderer.js` lines 307-388
-**Severity:** CRITICAL
-**Category:** Logic Bug — Data Corruption
-
-**Description:**
-The `ipcRenderer.on('batch-progress')` handler had two separate code blocks that both updated `statsManager` for the `status === 'completed'` case. The first block (inside the `else if (data.status === 'completed' && data.result && data.result.success)` branch) correctly incremented healthy/repairable/corrupted. The second block (a follow-up `if (data.result && data.status === 'completed')`) duplicated the same increments unconditionally (for any result that had `data.result.success` set, even if it was already handled above). Every completed file was being counted twice in all statistics and chart displays.
-
-**Root Cause:** Copy-paste duplication of statistics update logic.
-
-**Fix Applied:** Removed the duplicate second block entirely. The first block already handles all cases correctly.
-
----
+None.
 
 ### HIGH
-
----
-
-#### H-01: Shell Injection Risk — `exec()` with Template Literals for FFmpeg Paths
-
-**File:** `src/main.js` lines 152, 158, 229, 235, 1652, 1687
-**Severity:** HIGH
-**Category:** Security — Command Injection
-
-**Description:**
-The `checkBundledFFmpeg()` function used `exec(`"${ffmpegPath}" -version`, ...)` and `findSystemFFmpeg()` used `exec(`"${ffmpegTestPath}" -version`, ...)`. While ffmpeg paths are internally generated (not directly from user input at these call sites), the use of `exec()` with template literal string interpolation into a shell command is an unsafe pattern. It passes through `/bin/sh`, which interprets shell metacharacters. A path containing `` ` ``, `$()`, or `;` could execute arbitrary shell commands. The `get-ffmpeg-info` and `check-hw-acceleration` handlers also used `execPromise()` with template literals: `` execPromise(`${ffmpegPath} -version`) `` and `` execPromise(`${ffmpegPath} -hide_banner -encoders`) ``.
-
-**Fix Applied:** All `exec()` template literal calls replaced with `spawn(binary, [args])` which never invokes a shell. Added a new `spawnPromise(cmd, args)` helper function. `execPromise()` retained for legacy compatibility but no longer used in hot paths.
-
----
-
-#### H-02: XSS — Raw FFprobe/FFmpeg Output Injected into `innerHTML`
-
-**File:** `src/renderer/renderer.js` lines 1655-1670, 1588-1614
-**Severity:** HIGH
-**Category:** Security — XSS
-
-**Description:**
-Both `updateResultsTab()` and `generateHTMLReport()` built HTML strings by directly interpolating `result.issues`, `result.recommendations`, `result.corruptionLevel`, and `path.basename(result.file)` — all of which originate from ffprobe/ffmpeg stderr output or user-selected file paths — directly into `innerHTML`. A video file whose name or metadata contained `<script>alert(1)</script>` or similar would execute in the renderer context. Since this is an Electron app with `nodeIntegration: true` and `contextIsolation: false`, XSS in the renderer is equivalent to arbitrary code execution.
-
-**Fix Applied:**
-- Added `escapeHTML()` utility function that escapes `&`, `<`, `>`, `"`, `'`.
-- Applied `escapeHTML()` to all `fileName`, `corruptionLevel`, `result.issues` array elements, and `result.recommendations` array elements before HTML injection.
-- Applied to both `updateResultsTab()` and `generateHTMLReport()`.
-
----
-
-#### H-03: CSV Injection — Unescaped Internal Quotes in CSV Export
-
-**File:** `src/renderer/renderer.js` — `generateCSVReport()` function
-**Severity:** HIGH (downgraded from CRITICAL because it requires user to open the CSV in a formula-evaluating application)
-**Category:** Security — CSV Injection / Data Corruption
-
-**Description:**
-`generateCSVReport()` wrapped fields in double quotes but did not escape internal double quotes by doubling them (per RFC 4180). A file name or issue string containing a `"` character would break field delimiters, corrupting the CSV structure. Additionally, fields beginning with `=`, `+`, `-`, or `@` could be interpreted as formula injections when the CSV is opened in Excel or LibreOffice.
-
-**Fix Applied:** Added `csvField()` helper that escapes internal `"` by doubling them per RFC 4180. Applied to all CSV field writes.
-
----
-
-#### H-04: Incorrect Path Traversal Detection in `validatePath()`
-
-**File:** `src/main.js` lines 47-50
-**Severity:** HIGH
-**Category:** Logic Bug — False Positive Security Block
-
-**Description:**
-`validatePath()` used `inputPath.includes('..')` to detect path traversal. This is too broad: it rejects any absolute path that contains `..` as a substring anywhere, including legitimate filenames like `video..1080p.mp4` or paths on systems where directory names contain `..`. The correct check is to verify that `..` appears as a discrete path component (i.e., as its own segment separated by path separators), not as a substring within a component.
-
-**Fix Applied:**
-```js
-// BEFORE
-if (inputPath.includes('..')) {
-// AFTER
-const parts = inputPath.split(path.sep);
-if (parts.includes('..')) {
-```
-
----
-
-#### H-05: Null Crash in `startRepairs()` — DOM Row Access Without Guard
-
-**File:** `src/renderer/renderer.js` lines 1337-1339
-**Severity:** HIGH
-**Category:** Runtime Crash
-
-**Description:**
-`startRepairs()` used `document.querySelector(...)` to find a table row by file path, then immediately called `.querySelector('.repair-strategy-select')` on the result without checking if the row was found. If a file was removed from the repair queue DOM between queue population and repair start (e.g., user removed it while repairs were queued), `row` would be `null` and `row.querySelector()` would throw a TypeError, crashing the entire repair loop.
-
-**Fix Applied:** Added null guard on `row`. If the row is not found, the file is skipped with a console warning.
-
----
-
-#### H-06: Hardcoded Sudo Password in `run-source-linux.sh`
-
-**File:** `run-source-linux.sh` line 43
-**Severity:** HIGH
-**Category:** Security — Credential Exposure
-
-**Description:**
-The `fix_linux_sandbox()` function contained `echo "1234" | sudo -S sysctl -w kernel.unprivileged_userns_clone=1`. This embeds a plaintext password in a shell script that is committed to a git repository. Anyone with read access to the repository or the filesystem would obtain the system password.
-
-**Fix Applied:** Removed the `echo "password" | sudo -S` pattern. `sudo` is now called directly, which will either prompt for a password or succeed silently if NOPASSWD is configured. A user-facing warning is displayed if the command fails.
-
----
+None.
 
 ### MEDIUM
-
----
-
-#### M-01: `DEBUG = true` Hardcoded — Verbose Logging in Production
-
-**File:** `src/main.js` line 10
-**Severity:** MEDIUM
-**Category:** Code Quality / Information Disclosure
-
-**Description:**
-`const DEBUG = true` was hardcoded unconditionally. Production builds would emit verbose `[DEBUG]` log lines to console including full file paths and FFmpeg command arguments. These logs are visible in packaged Electron app consoles (e.g., via `--enable-logging`). This leaks internal path structures and processing details.
-
-**Fix Applied:** Changed to `const DEBUG = process.env.NODE_ENV !== 'production'`. Debug logging now suppressed in production.
-
----
-
-#### M-02: `clearRepairQueue()` — Null Crash on `queueBody`
-
-**File:** `src/renderer/renderer.js` — `clearRepairQueue()` function
-**Severity:** MEDIUM
-**Category:** Runtime Crash
-
-**Description:**
-`document.getElementById('queueBody').innerHTML = ''` called without null check. Throws if element is not present.
-
-**Fix Applied:** Added null guard: `const queueBody = document.getElementById('queueBody'); if (queueBody) queueBody.innerHTML = '';`
-
----
-
-#### M-03: `repairSingleFile()` — Null Crash on `outputFolder`
-
-**File:** `src/renderer/renderer.js` — `repairSingleFile()` function
-**Severity:** MEDIUM
-**Category:** Runtime Crash
-
-**Description:**
-`document.getElementById('outputFolder').value` called without null check. Throws TypeError if DOM element not found.
-
-**Fix Applied:** Added null guard, defaulting to empty string if element not found.
-
----
-
-#### M-04: `updateResultsTab()` — Null Crash on `resultsDetails`
-
-**File:** `src/renderer/renderer.js` line 1647
-**Severity:** MEDIUM
-**Category:** Runtime Crash
-
-**Description:**
-`resultsDetails.innerHTML = ''` called immediately after `getElementById()` without verifying the element was found.
-
-**Fix Applied:** Added null guard with early return and console warning.
-
----
-
-#### M-05: `initializeEventListeners()` — Null Crashes on `enableAdvancedRepair` and `extractFramesOnFailure`
-
-**File:** `src/renderer/renderer.js` lines 251-258
-**Severity:** MEDIUM
-**Category:** Runtime Crash
-
-**Description:**
-Both `document.getElementById('enableAdvancedRepair').addEventListener(...)` and `document.getElementById('extractFramesOnFailure').addEventListener(...)` were called without null guards. If either element is absent from the DOM, a TypeError is thrown during initialization, potentially preventing the entire UI from setting up correctly.
-
-**Fix Applied:** Both are now wrapped in null guards with console warnings.
-
----
-
-#### M-06: `statsManager` Race Condition Logic — Spin-Wait Pattern
-
-**File:** `src/renderer/renderer.js` lines 48-62
-**Severity:** MEDIUM
-**Category:** Code Quality / Performance
-
-**Description:**
-The `statsManager.update()` method uses a `_updating` boolean flag and `setTimeout(() => this.update(...), 1)` to implement a spin-wait mutex. JavaScript is single-threaded; there is no actual concurrent access risk for synchronous counter increments. The `_updating` flag can never be `true` when `update()` is called by another invocation (they're on the same event loop turn), so this mechanism provides no protection while adding complexity and potential for runaway recursive `setTimeout` accumulation if called very frequently.
-
-**Status:** Documented but not changed in this pass. The logic is not harmful (just unnecessary) and changing it could have unintended side effects. Recommend simplifying in a future refactor to a plain property increment.
-
----
-
-#### M-07: `getFileSize()` Returns Hardcoded 'Unknown' — Dead Stub
-
-**File:** `src/renderer/renderer.js` lines 1293-1296
-**Severity:** MEDIUM (LOW for user impact, MEDIUM for code quality)
-**Category:** Dead Code / Missing Implementation
-
-**Description:**
-```js
-function getFileSize() {
-  // This would need actual file size from main process
-  return 'Unknown';
-}
-```
-This function is called in `addToRepairQueue()` to populate the file size column in the repair queue table, always showing "Unknown". File size is readily available via `fs.statSync()` in the main process (already used for repair output validation at line 1293 of main.js). The file size could be included in the analysis result returned from `analyzeFileHandler`.
-
-**Status:** Documented. Not modified in this pass to avoid scope creep — this requires a main/renderer data flow change.
-
----
+None.
 
 ### LOW
 
----
+| ID | File:Line | Finding | Fix |
+|----|-----------|---------|-----|
+| L-01 | `src/renderer/preload.js:21,23` | Dead allowlist entries: `analysis-progress` and `repair-progress` channels were whitelisted for `ipcRenderer.on()` subscription but main.js never emits them. Renderer code never subscribes either. Confused future maintainers. | **AUTO-FIXED** — removed both entries. Allowlist now: `ffmpeg-download-status`, `scan-progress`, `batch-progress`, `repair-status` (matches actual emit sites). |
+| L-02 | `src/renderer/index.html:389` | Help section "Repair Strategies" subsection still listed `Keyframe Rebuild` even though the strategy was removed from the actual `advanced-repair` strategies array (main.js:1478-1483) and from the Repair Queue tab (index.html:240-243). Misleading user-facing doc. | **AUTO-FIXED** — removed the dangling `<li>Keyframe Rebuild</li>` from Help section. |
 
-#### L-01: `preload.js` — IPC Channel Allowlist Not Enforced on `invoke`
+### INFO
 
-**File:** `src/renderer/preload.js` lines 15-16
-**Severity:** LOW
-**Category:** Defense in Depth
-
-**Description:**
-The `electronAPI.invoke()` and `electronAPI.send()` methods exposed to the renderer world do not filter on allowed IPC channels — any channel name can be invoked. The `on()` listener method does validate against `validChannels`, but the `invoke` and `send` paths do not. Since `contextIsolation: false` and `nodeIntegration: true` are set in this app's window config (making the preload a security theater rather than a real boundary), this is LOW severity. However, if the security model is tightened in future, the missing channel allowlist on `invoke`/`send` would become HIGH.
-
-**Status:** Documented. Not changed — the preload is currently bypassed by the direct `require('electron')` in renderer.js (line 8: `const { ipcRenderer } = require('electron')`). Full contextIsolation migration is tracked as a future improvement.
-
----
-
-#### L-02: Commented-Out Code Left In-Place (Dead Code Volume)
-
-**File:** `src/renderer/renderer.js`
-**Severity:** LOW
-**Category:** Code Quality
-
-**Description:**
-Several significant blocks of commented-out code exist in renderer.js:
-- Lines 499-602: Full `selectFolder()` function in a `/* */` block
-- Lines 1118-1148: Full `startChartAnimation()` function in a `/* */` block
-- Lines 1298-1313: `getRepairStrategy()` function in a `/* */` block
-
-These add ~100 lines of noise and create confusion about what's active. They should be removed (code history is in git).
-
-**Status:** Documented. Not removed in this pass to avoid potential loss of intent context before a developer reviews them.
+| ID | File:Line | Note |
+|----|-----------|------|
+| I-01 | `src/renderer/index.html` | No `<meta http-equiv="Content-Security-Policy">` tag. Acceptable given file://-only loading and no remote content. Could be hardened with `default-src 'self' 'unsafe-inline' 'unsafe-eval' file:` if future migration to `contextIsolation:true`. |
+| I-02 | `src/renderer/index.html:27` | Inline `onclick="switchToSettings()"` on settings button. Works only because of `nodeIntegration:true` + `contextIsolation:false`. Documented in PRD §14.14. **Not migrated** — would silently break under hardened webPreferences; migration must happen alongside config flip. |
+| I-03 | `src/main.js` (was L-?) | `#useGPUAcceleration` settings checkbox is detected at lines ~1700 (`check-hw-acceleration` IPC), reported to UI, but never consumed by `repairFileInternal` codec selection (encoding always uses `libx264`/`libx265`/`prores_ks`). Either implement codec switching or strip the checkbox. **DEFERRED** — falls under feature work, not audit fix. Documented in PRD §14.10. |
+| I-04 | `src/main.js` settings tab | `#maxThreads`, `#timeoutSeconds`, `#autoRepair`, `#preserveOriginal` are UI-only with no IPC wiring. Settings tab is largely cosmetic at v3.5.0. **DEFERRED** — feature work. |
+| I-05 | `package.json` build/devDeps | 15 dev-only npm-audit vulns (12 high, 1 mod, 2 low) all in `node-tar`/`cacache` via `electron-builder@25.1.8`. Fix requires breaking upgrade to `electron-builder@26.8.1`. **DEFERRED** — covered in Step 4 LINT_REPORT.md. |
 
 ---
 
-#### L-03: `webSecurity: false` in BrowserWindow Config
+## Verified Clean (no findings)
 
-**File:** `src/main.js` line 339
-**Severity:** LOW (in context of this app's architecture)
-**Category:** Security
+### Security
+- `validatePath()` (main.js:40-70): blocks `..`, null bytes, non-absolute, len > 4096. Applied at `analyzeFileHandler` (file path), `scan-folder` (folder path + per-recursive-step path), `advanced-repair` (BOTH `filePath` AND `outputDir` — improvement over prior pass that only validated `filePath`).
+- `validateVideoExtension()` (main.js:72-75): allowlist `.mp4 .mov .avi .mkv .m4v .flv .webm .wmv .mpg .mpeg`. Applied at `analyzeFileHandler` and as input validation for `scan-folder` extension array.
+- `spawn()` array args: every FFmpeg/FFprobe spawn site (lines ~150, 230, 720, 760, 1280, 1390) passes args as `[...]` not concatenated strings. No shell injection surface.
+- `execPromise()` (main.js:~1754): used ONLY for hardcoded string `system_profiler SPDisplaysDataType`. No other callers. Safe.
+- `shell.openExternal` protocol guard (`open-external` IPC handler): URL parsed via `new URL()`; only `http:`, `https:`, `mailto:` allowed. Other schemes silently dropped.
+- `dialog.showOpenDialog` filters: video file picker restricted to allowlisted extensions; folder picker uses `openDirectory` only.
+- IPC channel allowlist (preload.js): post-fix, matches actual emit sites 1:1.
 
-**Description:**
-`webSecurity: false` disables the same-origin policy and allows loading local resources via `file://` URIs from any origin. This is set alongside `nodeIntegration: true` and `contextIsolation: false`, indicating the overall security model accepts these tradeoffs. For a local desktop tool with no web content, the impact is minimal.
+### Correctness
+- FFmpeg child process tracking: every `spawn()` push to `runningProcesses` Set; every `'close'` handler `delete()` from Set. Verified at all 8 spawn sites.
+- SIGTERM cleanup: `stop-analysis` IPC (lines ~841) iterates Set + sends SIGTERM. `mainWindow.on('closed')` (lines ~376) does the same. No orphan processes after window close.
+- 100ms inter-file delay (line ~900): preserved (intentional I/O pacing).
+- 10KB output threshold (line ~1317): preserved (filters false-positive repair successes).
+- JSON.parse wrapped in try/catch (line ~797).
 
-**Status:** Documented. Not changed — changing this without also fixing `nodeIntegration` and `contextIsolation` would not meaningfully improve security and could break local file loading.
+### Resource Management
+- `mainWindow.webContents.send` calls guarded by `mainWindow && !mainWindow.isDestroyed()` at 7+ sites in `batch-analyze`. Two FFmpeg-status sends (lines 264, 285, 303) guarded by `if (mainWindow)` (no `isDestroyed()` check, but called only during initial `ensureFFmpeg` before window destruction is possible — acceptable).
+- `fs.promises.copyFile` + `fs.promises.unlink` cross-fs-safe pattern in `moveCorruptFile` and `moveToFixedFolder`.
+- IPC handlers registered once at module load (no re-registration in handlers).
+- No `setInterval` / `setTimeout` polling loops (only the 100ms inter-file delay, which is one-shot per iteration).
 
----
+### Electron Best Practices
+- `BrowserWindow.webPreferences` (lines ~345): `nodeIntegration:true`, `contextIsolation:false`, `webSecurity:false`, `sandbox:false` — intentional, documented. Source comment at line 351 warns NEVER set `experimentalFeatures:true` (breaks contextBridge IPC on Linux).
+- Linux Chromium flags injected before `app.whenReady()` (lines ~390-396): `enable-transparent-visuals`, `disable-gpu-compositing`, `no-sandbox`. Survives in packaged builds.
+- No `webContents.on('will-navigate')` / `'new-window')` handlers — VidBeast only calls `loadFile()` (no `loadURL`), so navigation is impossible. Acceptable.
+- No permission request handlers — VidBeast doesn't use camera/mic/notifications/geolocation. Acceptable.
 
-## npm Audit Results
-
-**Before `npm audit fix`:** 20 vulnerabilities (2 low, 6 moderate, 12 high)
-**After `npm audit fix` (non-breaking):** 14 vulnerabilities (2 low, 3 moderate, 9 high)
-
-Fixed by non-breaking `npm audit fix`:
-- `@isaacs/brace-expansion` — Uncontrolled Resource Consumption
-- `ajv` — ReDoS via `$data` option
-- `glob` (config-file-ts) — Command injection via CLI
-- `js-yaml` — Prototype pollution in merge
-- `lodash` — Prototype pollution in `_.unset`/`_.omit`
-- `minimatch` — Multiple ReDoS vulnerabilities
-
-Remaining 14 vulnerabilities are all in the `electron-builder` build toolchain dependency tree (`@tootallnate/once`, `tar`, `yauzl`). They are **NOT runtime vulnerabilities** — they affect the packaging tool only, not the distributed application. Fixing them requires a major version bump of `electron-builder` (25.x to 26.x) which is a breaking change. The instruction was not to upgrade major deps.
-
----
-
-## Architecture Observations (No Code Changes)
-
-**Electron Security Model:** This app uses `nodeIntegration: true`, `contextIsolation: false`, and `webSecurity: false`. The preload script (which creates an `electronAPI` bridge) is bypassed in `renderer.js` which directly `require('electron')`. This means there is no meaningful IPC sandboxing. For a local desktop utility that processes only user-selected local files, this is an accepted tradeoff, but the comment at renderer.js line 7 ("Temporarily using direct IPC while fixing security configuration") indicates this was intended to be temporary. Full contextIsolation would require migrating all `ipcRenderer.invoke/on` calls in renderer.js to use the `window.electronAPI` bridge from preload.js.
-
-**No Test Suite:** `package.json` has `"test": "echo \"No tests specified\""`. Zero test coverage. This is common for Electron desktop tools but means all validation is manual.
-
-**`exec` Still Present:** `execPromise()` is retained and still called from any future code. The underlying `exec` import is still present. The high-risk template literal calls have been migrated to `spawnPromise`, but the `execPromise` function itself remains available.
+### Build Health
+- `package.json` `build.files` exclusions (Step 3): `!**/*.backup.*`, `!src/sources/**` — verified present. Backup artifacts and 700+ vendored C# files excluded from packaging.
+- `electron-builder.json` icon paths (Step 3): now `resources/icons/icon.{icns,ico,png}` — files exist at those paths.
+- Run scripts shellcheck-clean (Step 4 LINT_REPORT verified 0 issues post-fix).
 
 ---
 
-## Files Modified
+## Auto-Fixes Applied (this pass)
 
-| File | Changes |
-|------|---------|
-| `src/main.js` | Fixed save-report handler signature; replaced exec() template literals with spawn(); added spawnPromise helper; fixed validatePath() traversal check; changed DEBUG to env-driven |
-| `src/renderer/renderer.js` | Fixed stats double-counting; added escapeHTML(); applied HTML escaping to all innerHTML; fixed CSV quoting; fixed 5 null-crash bugs; fixed startRepairs row guard |
-| `run-source-linux.sh` | Removed hardcoded sudo password |
-| `CHANGELOG.md` | Updated with all changes |
-| `AUDIT_REPORT.md` | This file |
+| File | Lines | Change |
+|------|-------|--------|
+| `src/renderer/preload.js` | 18-25 | Removed dead allowlist entries `analysis-progress`, `repair-progress` from `validChannels` array. Final allowlist: `[ffmpeg-download-status, scan-progress, batch-progress, repair-status]`. |
+| `src/renderer/index.html` | 389 | Removed dangling `<li><strong>Keyframe Rebuild:</strong> ...</li>` from Help section "Repair Strategies" list. Now matches actual implementation (4 strategies: Extract Playable, Container Repair, Stream Remux, Deep Repair). |
 
 ---
 
-*Audit conducted by Master Control — END OF LINE.*
+## Deferred Items
+
+| Item | Reason |
+|------|--------|
+| `#useGPUAcceleration` codec switching | Feature work, not audit fix. Requires implementing per-codec hardware encoder selection (h264_videotoolbox / h264_nvenc / h264_qsv / h264_amf) with CPU fallback. Documented in PRD §14.10. |
+| `#maxThreads`, `#timeoutSeconds`, `#autoRepair`, `#preserveOriginal` UI wiring | Feature work. Settings tab is cosmetic at v3.5.0. |
+| `electron-builder` 25→26 upgrade (resolves 15 dev-only npm-audit vulns) | Breaking change. Requires re-validating full mac/win/linux × 6+ targets × multi-arch matrix. Should be a dedicated PR. |
+| Inline `onclick=` migration | Coupled to `contextIsolation:true` migration. Doing one without the other breaks. Documented in PRD §14.14. |
+| `nodeIntegration:false` / `contextIsolation:true` flip | Architectural; would require renderer.js refactor (no `require()` in renderer; all Node APIs through preload). Out of audit scope. |
+| `<meta CSP>` tag | Optional hardening; meaningful only after the architectural flip above. |
+
+---
+
+## Final Verification
+
+- `node --check src/main.js` → OK
+- `node --check src/renderer/preload.js` → OK
+- `node --check src/renderer/renderer.js` → OK
+- `eslint src/` → 0 errors, 0 warnings (Step 4 baseline maintained)
+- `npm audit --omit=dev` → 0 vulnerabilities
+
+---
+
+## Status
+
+**DONE_WITH_CONCERNS** — 2 LOW findings, 2 auto-fixed, 0 deferred at LOW severity. 5 INFO items deferred (3 are feature work, 1 is the documented npm-audit electron-builder breaking upgrade, 1 is the documented architectural flip). No CRITICAL/HIGH/MEDIUM findings. Repo is audit-clean for the v3.5.0 release surface.

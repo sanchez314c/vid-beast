@@ -339,17 +339,6 @@ ipcRenderer.on('scan-progress', (event, data) => {
   if (filesFoundSpan) filesFoundSpan.textContent = data.found;
 });
 
-ipcRenderer.on('analysis-progress', (event, data) => {
-  console.log('Analysis progress:', data.file);
-  if (currentFileSpan) {
-    currentFileSpan.textContent = electronAPI.path.basename(data.file);
-  }
-
-  if (progressChart && analysisResults.length > 0) {
-    updateProgressChart();
-  }
-});
-
 ipcRenderer.on('batch-progress', (event, data) => {
   console.log('Batch progress:', `${data.current}/${data.total} - ${data.status}`);
 
@@ -428,11 +417,6 @@ ipcRenderer.on('batch-progress', (event, data) => {
     const seconds = elapsed % 60;
     if (durationSpan) durationSpan.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
-});
-
-ipcRenderer.on('repair-progress', (event, data) => {
-  console.log('Repair progress:', data);
-  updateRepairProgress(data.file, data.progress, data.type);
 });
 
 ipcRenderer.on('repair-status', (event, data) => {
@@ -1299,24 +1283,24 @@ function addToRepairQueue(repairableResults) {
       repairQueue.push(queueItem);
 
       const row = document.createElement('tr');
-      const fileName = path.basename(result.file);
-      const fileSize = getFileSize();
+      const fileName = escapeHTML(path.basename(result.file));
+      const fileSize = escapeHTML(getFileSize());
+      const corruptionLevel = escapeHTML(result.corruptionLevel || 'unknown');
+      const safeFilePath = escapeHTML(result.file);
       // Auto-detect strategy is selected by default in the dropdown
 
       row.setAttribute('data-file', result.file);
       row.innerHTML = `
                 <td>${fileName}</td>
                 <td>${fileSize}</td>
-                <td>${result.corruptionLevel}</td>
+                <td>${corruptionLevel}</td>
                 <td>
-                    <select class="repair-strategy-select" data-file="${result.file}">
+                    <select class="repair-strategy-select" data-file="${safeFilePath}">
                         <option value="auto" selected>Auto-detect</option>
                         <option value="extract-playable">Extract Playable</option>
                         <option value="container-repair">Container Repair</option>
                         <option value="stream-remux">Stream Remux</option>
                         <option value="deep-repair">Deep Repair (Re-encode)</option>
-                        <option value="keyframe-repair">Keyframe Rebuild</option>
-                        <option value="remove-audio">Remove Audio</option>
                     </select>
                 </td>
                 <td class="repair-status">Queued</td>
@@ -1507,18 +1491,6 @@ function updateRepairStatus(filePath, status, progress = 0) {
     const progressBar = row.querySelector('.progress');
     if (progressBar) {
       progressBar.style.width = `${progress}%`;
-    }
-  }
-}
-
-function updateRepairProgress(filePath, progress) {
-  const row = document.querySelector(`tr[data-file="${filePath}"]`);
-  if (row) {
-    const progressBar = row.querySelector('.progress');
-    if (progressBar) {
-      // Estimate progress percentage based on time
-      const percentage = Math.min(95, (progress / 60) * 100); // Assume 60 seconds average
-      progressBar.style.width = `${percentage}%`;
     }
   }
 }
@@ -1802,8 +1774,8 @@ async function checkFFmpegStatus() {
       console.log('FFmpeg is installed:', ffmpegInfo.ffmpegPath);
       statusElement.innerHTML = `
                 <span style="color: var(--success);">FFmpeg Installed</span><br>
-                <span style="font-size: 12px; color: var(--text-muted);">Path: ${ffmpegInfo.ffmpegPath}</span><br>
-                <span style="font-size: 12px; color: var(--text-muted);">Version: ${ffmpegInfo.version || 'Unknown'}</span>
+                <span style="font-size: 12px; color: var(--text-muted);">Path: ${escapeHTML(ffmpegInfo.ffmpegPath)}</span><br>
+                <span style="font-size: 12px; color: var(--text-muted);">Version: ${escapeHTML(ffmpegInfo.version || 'Unknown')}</span>
             `;
 
       // Check for hardware acceleration
@@ -1821,7 +1793,7 @@ async function checkFFmpegStatus() {
     if (statusElement) {
       statusElement.innerHTML = `
                 <span style="color: var(--error);">Error checking FFmpeg</span><br>
-                <span style="font-size: 12px; color: var(--text-muted);">${error.message}</span>
+                <span style="font-size: 12px; color: var(--text-muted);">${escapeHTML(error.message || String(error))}</span>
             `;
     }
   }
@@ -1848,8 +1820,8 @@ async function checkHardwareAcceleration() {
       if (hwAccelInfo.available) {
         hwInfo.innerHTML = `
                     <span style="color: var(--success);">Hardware Acceleration Available</span><br>
-                    <span style="color: var(--text-muted);">Supported codecs: ${hwAccelInfo.codecs.join(', ')}</span><br>
-                    <span style="color: var(--text-muted);">GPU: ${hwAccelInfo.gpuInfo || 'Unknown'}</span>
+                    <span style="color: var(--text-muted);">Supported codecs: ${escapeHTML(hwAccelInfo.codecs.join(', '))}</span><br>
+                    <span style="color: var(--text-muted);">GPU: ${escapeHTML(hwAccelInfo.gpuInfo || 'Unknown')}</span>
                 `;
         if (gpuCheckbox) gpuCheckbox.disabled = false;
       } else {

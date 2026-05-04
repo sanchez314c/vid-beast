@@ -18,9 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const validChannels = [
       'ffmpeg-download-status',
       'scan-progress',
-      'analysis-progress',
       'batch-progress',
-      'repair-progress',
       'repair-status'
     ];
     if (validChannels.includes(channel)) {

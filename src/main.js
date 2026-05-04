@@ -2,9 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
-// const https = require('https'); // Reserved for future use
 const { exec } = require('child_process');
-// const os = require('os'); // Reserved for future use
 
 // Enable detailed logging - only active in development mode
 const DEBUG = process.env.NODE_ENV !== 'production';
@@ -82,20 +80,6 @@ let ffprobePath = null;
 let shouldStopAnalysis = false;
 const runningProcesses = new Set();
 
-// FFmpeg download URLs for macOS - Reserved for future use
-// const FFMPEG_URLS = {
-//   darwin: {
-//     x64: 'https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip',
-//     arm64: 'https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip'
-//   }
-// };
-
-// const FFPROBE_URLS = {
-//   darwin: {
-//     x64: 'https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip',
-//     arm64: 'https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip'
-//   }
-// };
 
 // Get the platform-specific binary directory and filenames
 function getBinaryPaths() {
@@ -276,46 +260,46 @@ async function ensureFFmpeg() {
     console.log(`✅ Using bundled FFmpeg at: ${ffmpegPath}`);
     console.log(`✅ Using bundled FFprobe at: ${ffprobePath}`);
     
-    if (mainWindow) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('ffmpeg-download-status', {
         status: 'complete',
         message: 'Using bundled FFmpeg'
       });
     }
-    
+
     return { ffmpegPath, ffprobePath, isBundled: true };
   }
-  
+
   // Fall back to system FFmpeg
   console.log('🔍 Bundled FFmpeg not available, checking system installation...');
   const systemFFmpeg = await findSystemFFmpeg();
-  
+
   if (systemFFmpeg) {
     ffmpegPath = systemFFmpeg.ffmpegPath;
     ffprobePath = systemFFmpeg.ffprobePath;
-    
+
     console.log(`✅ Found system FFmpeg at: ${ffmpegPath}`);
     console.log(`✅ Found system FFprobe at: ${ffprobePath}`);
-    
-    if (mainWindow) {
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('ffmpeg-download-status', {
         status: 'complete',
         message: 'Using system-installed FFmpeg'
       });
     }
-    
+
     return { ffmpegPath, ffprobePath, isSystem: true };
   }
-  
+
   // Neither bundled nor system FFmpeg found
   const binaryPaths = getBinaryPaths();
   const errorMessage = `FFmpeg not found. Please either:
-1. Install FFmpeg system-wide, or  
+1. Install FFmpeg system-wide, or
 2. Place FFmpeg binaries in resources/binaries/${binaryPaths.platformDir}/`;
-  
+
   console.error('❌', errorMessage);
-  
-  if (mainWindow) {
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('ffmpeg-download-status', {
       status: 'error',
       message: errorMessage
@@ -338,7 +322,7 @@ function createWindow() {
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
-    hasShadow: false,
+    hasShadow: true,
     resizable: true,
     roundedCorners: true,
     ...(isMac ? { titleBarStyle: 'hiddenInset' } : {}),
@@ -480,18 +464,6 @@ ipcMain.handle('open-external', async (event, url) => {
 });
 
 // IPC Handlers
-ipcMain.handle('select-files', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile', 'multiSelections'],
-    filters: [
-      { name: 'Video Files', extensions: ['mp4', 'mov', 'avi', 'mkv', 'm4v', 'flv', 'webm', 'wmv', 'mpg', 'mpeg'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
-  });
-
-  return result.filePaths;
-});
-
 ipcMain.handle('select-folder', async () => {
   try {
     console.log('=== SELECT-FOLDER HANDLER START ===');
@@ -563,11 +535,16 @@ ipcMain.handle('select-folder', async () => {
 });
 
 ipcMain.handle('select-output-folder', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory', 'createDirectory']
-  });
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    });
 
-  return result.filePaths[0];
+    return result.filePaths[0] || null;
+  } catch (error) {
+    console.error('select-output-folder error:', error);
+    return null;
+  }
 });
 
 // Unified video selection handler
@@ -840,9 +817,6 @@ async function performFFmpegAnalysis(filePath) {
   });
 }
 
-// IPC handlers
-ipcMain.handle('analyze-file', analyzeFileHandler);
-
 // Handle stop analysis signal
 ipcMain.on('stop-analysis', () => {
   console.log('Received stop analysis signal');
@@ -876,13 +850,15 @@ ipcMain.handle('batch-analyze', async (event, files, options = {}) => {
       debugLog('Output directory verified:', options.outputDir);
     } catch (error) {
       console.error('Output directory error:', error);
-      mainWindow.webContents.send('batch-progress', {
-        current: 0,
-        total: files.length,
-        file: '',
-        status: 'error',
-        error: `Output directory error: ${error.message}`
-      });
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('batch-progress', {
+          current: 0,
+          total: files.length,
+          file: '',
+          status: 'error',
+          error: `Output directory error: ${error.message}`
+        });
+      }
       return results;
     }
   }
@@ -1165,12 +1141,18 @@ ipcMain.handle('repair-file', async (event, filePath, repairType, outputDir) => 
   debugLog('Output directory:', outputDir);
 
   try {
+    // Validate file path
+    const validatedPath = validatePath(filePath);
+
+    // Validate output directory
+    const validatedOutputDir = validatePath(outputDir);
+
     // Verify output directory
-    if (!outputDir || !fs.existsSync(outputDir)) {
+    if (!fs.existsSync(validatedOutputDir)) {
       throw new Error('Output directory not found');
     }
 
-    const result = await repairFileInternal(event, filePath, repairType, outputDir);
+    const result = await repairFileInternal(event, validatedPath, repairType, validatedOutputDir);
     return result;
 
   } catch (error) {
@@ -1464,27 +1446,29 @@ async function extractFramesFromVideo(filePath, outputDir, frameRate = '24') {
 
 // Advanced repair operations
 ipcMain.handle('advanced-repair', async (event, filePath, options) => {
-  const outputDir = options.outputDir || path.dirname(filePath);
+  let outputDir = options.outputDir || path.dirname(filePath);
   const results = [];
 
   try {
+    const validatedPath = validatePath(filePath);
+    outputDir = validatePath(outputDir);
+
     ensureDirectoryExists(path.join(outputDir, 'repaired'));
 
     const strategies = [
       { type: 'extract-playable', suffix: '_extracted' },
       { type: 'container-repair', suffix: '_container_fixed' },
       { type: 'stream-remux', suffix: '_remuxed' },
-      { type: 'deep-repair', suffix: '_deep_repaired' },
-      { type: 'keyframe-repair', suffix: '_keyframe_fixed' }
+      { type: 'deep-repair', suffix: '_deep_repaired' }
     ];
 
     for (const strategy of strategies) {
       event.sender.send('repair-status', {
-        file: filePath,
+        file: validatedPath,
         message: `Trying ${strategy.type} repair...`
       });
 
-      const result = await repairFileInternal(event, filePath, strategy.type, outputDir);
+      const result = await repairFileInternal(event, validatedPath, strategy.type, outputDir);
 
       if (result.success) {
         results.push({

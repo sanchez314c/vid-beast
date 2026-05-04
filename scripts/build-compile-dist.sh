@@ -20,6 +20,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR/.."
 
 # Pipeline configuration
+# shellcheck disable=SC2034
 PIPELINE_START_TIME=$(date +%s)
 DETECTED_STACK=""
 DETECTED_FRAMEWORKS=()
@@ -27,6 +28,7 @@ DETECTED_LANGUAGES=()
 FAILED_STEPS=()
 COMPLETED_STEPS=()
 WARNINGS=()
+# shellcheck disable=SC2034
 PIPELINE_MODE="production"
 
 # Function to print colored output
@@ -90,7 +92,8 @@ dir_exists() {
 detect_files() {
     local pattern="$1"
     local description="$2"
-    local count=$(find . -name "$pattern" -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./build/*" -not -path "./dist/*" -not -path "./.venv/*" -not -path "./venv/*" | wc -l)
+    local count
+    count=$(find . -name "$pattern" -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./build/*" -not -path "./dist/*" -not -path "./.venv/*" -not -path "./venv/*" | wc -l)
 
     if [ "$count" -gt 0 ]; then
         print_info "✓ Found $count $description"
@@ -321,7 +324,7 @@ display_detected_config() {
         "electron")
             echo "  • Framework: Electron Desktop Application"
             echo "  • Languages: ${DETECTED_LANGUAGES[*]}"
-            if [[ " ${DETECTED_FRAMEWORKS[@]} " =~ " react " ]]; then
+            if [[ " ${DETECTED_FRAMEWORKS[*]} " =~ " react " ]]; then
                 echo "  • UI Framework: React"
             fi
             echo "  • Packaging: electron-builder (multi-platform)"
@@ -330,16 +333,16 @@ display_detected_config() {
         "python")
             echo "  • Framework: Python Application"
             echo "  • Type: GUI/Desktop Application"
-            if [[ " ${DETECTED_FRAMEWORKS[@]} " =~ " tkinter " ]]; then
+            if [[ " ${DETECTED_FRAMEWORKS[*]} " =~ " tkinter " ]]; then
                 echo "  • GUI: Tkinter"
             fi
-            if [[ " ${DETECTED_FRAMEWORKS[@]} " =~ " customtkinter " ]]; then
+            if [[ " ${DETECTED_FRAMEWORKS[*]} " =~ " customtkinter " ]]; then
                 echo "  • GUI: CustomTkinter"
             fi
-            if [[ " ${DETECTED_FRAMEWORKS[@]} " =~ " pyqt5 " ]]; then
+            if [[ " ${DETECTED_FRAMEWORKS[*]} " =~ " pyqt5 " ]]; then
                 echo "  • GUI: PyQt5"
             fi
-            if [[ " ${DETECTED_FRAMEWORKS[@]} " =~ " cli " ]]; then
+            if [[ " ${DETECTED_FRAMEWORKS[*]} " =~ " cli " ]]; then
                 echo "  • Type: CLI Application"
             fi
             echo "  • Packaging: PyInstaller (cross-platform)"
@@ -347,7 +350,7 @@ display_detected_config() {
             ;;
         "swift")
             echo "  • Framework: Swift Application"
-            if [[ " ${DETECTED_FRAMEWORKS[@]} " =~ " swiftui " ]]; then
+            if [[ " ${DETECTED_FRAMEWORKS[*]} " =~ " swiftui " ]]; then
                 echo "  • UI Framework: SwiftUI"
             fi
             echo "  • Platform: macOS/iOS"
@@ -395,6 +398,7 @@ run_security_validation() {
     # Secret scanning
     print_status "Scanning for potential secrets..."
 
+    # shellcheck disable=SC2034
     local secrets_found=0
     # Skip secrets scanning for now due to hanging issues
     print_info "Secrets scanning skipped to avoid build hanging"
@@ -429,7 +433,7 @@ run_code_quality_validation() {
         fi
 
         # TypeScript compilation check
-        if [[ " ${DETECTED_LANGUAGES[@]} " =~ " typescript " ]]; then
+        if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]]; then
             print_status "Checking TypeScript compilation..."
 
             if command_exists npx && npx tsc --noEmit 2>/dev/null; then
@@ -486,7 +490,8 @@ run_testing_validation() {
 generate_run_scripts() {
     print_status "📜 Generating platform-specific run scripts..."
 
-    local project_name=$(basename "$PWD")
+    local project_name
+    project_name=$(basename "$PWD")
 
     # macOS run script
     cat > run-source-macos.sh << EOF
@@ -698,14 +703,14 @@ build_electron_app() {
     fi
 
     # Build React/TypeScript if present
-    if [[ " ${DETECTED_LANGUAGES[@]} " =~ " typescript " ]]; then
+    if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]]; then
         print_status "Compiling TypeScript..."
         if command_exists npx && npx tsc --version >/dev/null 2>&1; then
             npx tsc --noEmit || print_warning "TypeScript compilation had warnings"
         fi
     fi
 
-    if [[ " ${DETECTED_FRAMEWORKS[@]} " =~ " react " ]]; then
+    if [[ " ${DETECTED_FRAMEWORKS[*]} " =~ " react " ]]; then
         print_status "Building React application..."
         if grep -q "build" package.json; then
             npm run build

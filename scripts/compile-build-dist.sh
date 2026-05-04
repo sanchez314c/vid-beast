@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 # Get the script directory and navigate to project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT" || exit 1
 
 # Function to print colored output
 print_status() {
@@ -227,6 +227,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --arch)
+            # shellcheck disable=SC2034
             ARCH="$2"
             shift 2
             ;;

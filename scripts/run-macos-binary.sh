@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Get the script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR" || exit 1
 
 # Function to print colored output
 print_status() {

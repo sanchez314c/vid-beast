@@ -48,10 +48,11 @@ cleanup_processes() {
 
     # Kill processes on configured ports
     for port in $DEV_SERVER_PORT $ELECTRON_DEBUG_PORT $ELECTRON_INSPECT_PORT; do
-        local pid=$(lsof -ti:$port 2>/dev/null)
-        if [ ! -z "$pid" ]; then
+        local pid
+        pid=$(lsof -ti:"$port" 2>/dev/null)
+        if [ -n "$pid" ]; then
             print_warning "Killing process on port $port (PID: $pid)"
-            kill -9 $pid 2>/dev/null
+            kill -9 "$pid" 2>/dev/null
         fi
     done
 
@@ -100,8 +101,7 @@ check_dependencies
 # Install dependencies if needed
 if [ ! -d "node_modules" ]; then
     print_status "Installing dependencies..."
-    npm install
-    if [ $? -ne 0 ]; then
+    if ! npm install; then
         print_error "Failed to install dependencies"
         exit 1
     fi

@@ -171,7 +171,7 @@ body {
     overflow: hidden;
     position: relative;
     border: none;
-    box-shadow: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Scrollbar — invisible at rest, visible on hover ── */
@@ -1261,9 +1261,15 @@ textarea::placeholder {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--success);
-    box-shadow: 0 0 8px var(--success);
+    background: var(--accent-teal);
+    box-shadow: 0 0 8px var(--accent-teal);
     flex-shrink: 0;
+    animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { box-shadow: 0 0 8px var(--accent-teal); }
+    50% { box-shadow: 0 0 12px var(--accent-teal), 0 0 20px var(--accent-teal-glow); }
 }
 
 .status-indicator.offline {

@@ -86,11 +86,14 @@ fi
 
 # Function to compare versions
 version_compare() {
-    if [[ $1 == $2 ]]; then
+    if [[ $1 == "$2" ]]; then
         return 0
     fi
     local IFS=.
-    local i ver1=($1) ver2=($2)
+    local i
+    local ver1 ver2
+    IFS=. read -ra ver1 <<< "$1"
+    IFS=. read -ra ver2 <<< "$2"
     for ((i=${#ver1[@]}; i<${#ver2[@]}; i++)); do
         ver1[i]=0
     done
@@ -201,12 +204,13 @@ echo -e "${CYAN}FFmpeg: $(if [[ "$FFMPEG_FOUND" == true ]]; then echo "Available
 echo ""
 
 # Set environment variables
-export NODE_ENV=$(if [[ "$DEV_MODE" == true ]]; then echo "development"; else echo "production"; fi)
+NODE_ENV=$(if [[ "$DEV_MODE" == true ]]; then echo "development"; else echo "production"; fi)
+export NODE_ENV
 
 # Launch with appropriate settings
 if [[ "$DEV_MODE" == true ]]; then
     if [[ "$VERBOSE" == true ]]; then
-        DEBUG=* npm run dev
+        DEBUG='*' npm run dev
     else
         npm run dev
     fi

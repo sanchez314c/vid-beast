@@ -123,8 +123,10 @@ electron-builder.yml
 archive/
 legacy/
 *.backup
+*.backup.*
 *.bak
 *~
+PIPELINE_LOG.md.prev_*
 
 # ============================================
 # Version Analysis

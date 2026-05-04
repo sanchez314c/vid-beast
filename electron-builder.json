@@ -11,7 +11,7 @@
   ],
   "mac": {
     "category": "public.app-category.video",
-    "icon": "resources/icon.icns",
+    "icon": "resources/icons/icon.icns",
     "target": [
       {
         "target": "dmg",
@@ -21,10 +21,10 @@
   },
   "win": {
     "target": "nsis",
-    "icon": "resources/icon.ico"
+    "icon": "resources/icons/icon.ico"
   },
   "linux": {
     "target": "AppImage",
-    "icon": "resources/icon.png"
+    "icon": "resources/icons/icon.png"
   }
 }

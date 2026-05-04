@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Get script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT" || exit 1
 
 # Function to print colored output
 print_status() {
@@ -194,7 +194,7 @@ if [ -d "dist" ]; then
             find dist -name "*.$ext" -exec ls -lah {} \; 2>/dev/null | while read -r line; do
                 if [ -n "$line" ]; then
                     SIZE=$(echo $line | awk '{print $5}')
-                    NAME=$(basename $(echo $line | awk '{print $9}'))
+                    NAME=$(basename "$(echo "$line" | awk '{print $9}')")
                     
                     # Convert size to MB for comparison
                     SIZE_MB=0

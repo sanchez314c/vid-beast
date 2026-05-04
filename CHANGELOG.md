@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2026-04-17] — Documentation Standardization (/repodocs)
+
+### Restructured
+- Moved `docs/CONTRIBUTING.md` → root `CONTRIBUTING.md` (governance file belongs at root)
+- Moved `docs/CODE_OF_CONDUCT.md` → root `CODE_OF_CONDUCT.md` (governance file belongs at root)
+- Created `.github/ISSUE_TEMPLATE/bug_report.md` (VidBeast-specific: bundled vs system FFmpeg, GPU encoders, sample file guidance)
+- Created `.github/ISSUE_TEMPLATE/feature_request.md` (with VidBeast scope check)
+- Created `.github/PULL_REQUEST_TEMPLATE.md` (platform matrix, security checklist, no-backup-files-in-src guard)
+- Replaced `docs/README.md` with a proper documentation index linking all 27 standard files
+- Wrote new `PRD.md` (root + mirrored to `docs/PRD.md`) — full reconstruction-grade spec covering Electron 38.1.0 stack, IPC inventory, 14 features, design tokens, gotchas
+
+### Archived (moved to `archive/docs-cleanup-20260417/`, NOT deleted)
+- `AUDIT_REPORT.md` (prior pipeline output)
+- `SETUP.md` (superseded by `docs/INSTALLATION.md`)
+- `implement.md` (stale pipeline plan)
+- `ARCHITECTURE.md` from root (`docs/ARCHITECTURE.md` is canonical)
+- `TODO.md` from root (identical duplicate of `docs/TODO.md`)
+- `docs/CHANGELOG.md` and `docs/CHANGELOG 2.md` (root `CHANGELOG.md` is canonical)
+- `docs/SECURITY.md` (root `SECURITY.md` is canonical)
+- `docs/MASTER-PRD.md` (superseded by new PRD.md)
+- `docs/BREADCRUMBS.md` (legacy)
+- `docs/DOCUMENTATION_INDEX.md` (superseded by `docs/README.md` index)
+- `docs/PROJECT_STRUCTURE.md` (project tree captured in PRD + ARCHITECTURE)
+- Empty `docs/{api,deployment,guides,tutorials}/` subdirectories removed
+
+### Verified
+- 27/27 standard files present (root: 9, .github: 3, docs/: 15)
+- LICENSE has no `.md` extension
+- All governance files at root, not in docs/
+
+---
+
 ## [2026-03-14 20:21] — Neo-Noir Glass Monitor Restyle
 
 ### Visual Changes
